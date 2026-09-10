@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@keyframes blender-rumble {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-1.5px, 1px) rotate(-0.5deg); }
+  40% { transform: translate(1.5px, -1px) rotate(0.5deg); }
+  60% { transform: translate(-1px, -1px) rotate(-0.25deg); }
+  80% { transform: translate(1px, 1px) rotate(0.25deg); }
+}
+
+@keyframes spin-ultra {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes vortex-pulse {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.85; }
+  50% { transform: scale(1.12) rotate(180deg); opacity: 1; }
+}
+
+@keyframes bubble-rise {
+  0% { transform: translateY(20px) scale(0.6); opacity: 0; }
+  30% { opacity: 0.8; }
+  100% { transform: translateY(-50px) scale(1.1); opacity: 0; }
+}
+
+@keyframes wave-liquid {
+  0%, 100% { transform: translateY(0px) scaleY(1); }
+  50% { transform: translateY(-3px) scaleY(1.02); }
+}
+
+.animate-blender-rumble {
+  animation: blender-rumble 0.08s infinite ease-in-out;
+}
+
+.animate-spin-ultra {
+  animation: spin-ultra 0.12s linear infinite;
+}
+
+.animate-vortex {
+  animation: spin-ultra 0.35s linear infinite;
+}
+
+.animate-bubble-1 {
+  animation: bubble-rise 1.8s ease-in infinite;
+}
+
+.animate-bubble-2 {
+  animation: bubble-rise 2.3s ease-in infinite 0.7s;
+}
+
+.animate-bubble-3 {
+  animation: bubble-rise 1.6s ease-in infinite 1.2s;
+}
+
+.animate-liquid-wave {
+  animation: wave-liquid 3s ease-in-out infinite;
+}

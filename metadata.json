@@ -1,0 +1,6 @@
+{
+  "name": "Juice Blender Studio",
+  "description": "An interactive educational subtractive color mixing studio featuring a playful glass blender, tactile fruit ingredients, realistic physical mixing, and color theory insights.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
