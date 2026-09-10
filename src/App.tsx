@@ -203,7 +203,7 @@ export const INGREDIENTS: IngredientMeta[] = [
   {
     id: 'red',
     name: 'Watermelon Cube',
-    subTitle: 'Geometric Cube',
+    subTitle: 'Geometric Block',
     role: 'Primary Red',
     colorHex: '#ef4444',
     theoryRole: 'Primary',
@@ -212,7 +212,7 @@ export const INGREDIENTS: IngredientMeta[] = [
   {
     id: 'yellow',
     name: 'Pineapple Slice',
-    subTitle: 'Sector Wedge',
+    subTitle: 'Ultrasound Fan',
     role: 'Primary Yellow',
     colorHex: '#eab308',
     theoryRole: 'Primary',
@@ -1525,27 +1525,41 @@ function IngredientGraphic({ type, size = 'md' }: { type: IngredientType; size?:
 
   switch (type) {
     case 'red': {
-      // Geometric Cube (Watermelon block)
-      const w = size === 'pitcher' ? 68 : dim;
-      const h = size === 'pitcher' ? 68 : dim;
+      // Pure Geometric Cube Block ("真的就是方塊")
+      const w = size === 'pitcher' ? 66 : dim;
+      const h = size === 'pitcher' ? 66 : dim;
       return (
-        <svg width={w} height={h} viewBox="0 0 40 40" fill="none" className="drop-shadow-md">
-          {/* Top Face */}
-          <polygon points="20,4 34,12 20,20 6,12" fill="#ff536a" />
-          {/* Front Left Face */}
-          <polygon points="6,12 20,20 20,36 6,28" fill="#e62644" />
-          {/* Front Right Face */}
-          <polygon points="20,20 34,12 34,28 20,36" fill="#bf1732" />
-          {/* Tiny Watermelon Seed Specks */}
-          <ellipse cx="14" cy="22" rx="0.8" ry="1.4" fill="#3a0008" />
-          <ellipse cx="26" cy="24" rx="0.8" ry="1.4" fill="#3a0008" />
-          <ellipse cx="20" cy="11" rx="1.2" ry="0.7" fill="#ffe4e8" opacity="0.6" />
+        <svg width={w} height={h} viewBox="0 0 44 44" fill="none" className="drop-shadow-md">
+          {/* Top Planar Face */}
+          <polygon
+            points="22,6 38,15 22,24 6,15"
+            fill="#f87171"
+            stroke="#dc2626"
+            strokeWidth="1.2"
+            strokeLinejoin="round"
+          />
+          {/* Left Planar Face */}
+          <polygon
+            points="6,15 22,24 22,38 6,29"
+            fill="#ef4444"
+            stroke="#dc2626"
+            strokeWidth="1.2"
+            strokeLinejoin="round"
+          />
+          {/* Right Planar Face */}
+          <polygon
+            points="22,24 38,15 38,29 22,38"
+            fill="#dc2626"
+            stroke="#b91c1c"
+            strokeWidth="1.2"
+            strokeLinejoin="round"
+          />
         </svg>
       );
     }
 
     case 'blue': {
-      // Smooth Sphere (Blueberry)
+      // Clean Geometric Blueberry Sphere
       const w = size === 'pitcher' ? 56 : dim;
       const h = size === 'pitcher' ? 56 : dim;
       return (
@@ -1553,43 +1567,76 @@ function IngredientGraphic({ type, size = 'md' }: { type: IngredientType; size?:
           <defs>
             <radialGradient id="berryGrad" cx="35%" cy="35%" r="65%">
               <stop offset="0%" stopColor="#60a5fa" />
-              <stop offset="35%" stopColor="#2563eb" />
-              <stop offset="85%" stopColor="#1d4ed8" />
-              <stop offset="100%" stopColor="#172554" />
+              <stop offset="45%" stopColor="#2563eb" />
+              <stop offset="90%" stopColor="#1e3a8a" />
             </radialGradient>
           </defs>
-          <circle cx="20" cy="20" r="16" fill="url(#berryGrad)" />
-          {/* Top Calyx crown dimple */}
-          <ellipse cx="19" cy="11" rx="4" ry="2" fill="#172554" />
-          <path d="M16 11 L19 8 L22 11 L20 13 Z" fill="#1e1b4b" />
-          {/* Gloss highlight */}
-          <ellipse cx="15" cy="14" rx="3.5" ry="2" fill="#ffffff" opacity="0.45" transform="rotate(-30 15 14)" />
+          <circle cx="20" cy="20" r="16" fill="url(#berryGrad)" stroke="#1d4ed8" strokeWidth="1" />
+          {/* Calyx Crown */}
+          <circle cx="20" cy="12.5" r="3.2" fill="#172554" />
+          <circle cx="20" cy="12.5" r="1.4" fill="#0f172a" />
+          {/* Clean Geometric Highlight */}
+          <ellipse cx="14" cy="14" rx="3.5" ry="2" fill="#ffffff" opacity="0.45" transform="rotate(-30 14 14)" />
         </svg>
       );
     }
 
     case 'yellow': {
-      // Sector / Wedge Shape (Pineapple Slice)
-      const w = size === 'pitcher' ? 72 : dim;
-      const h = size === 'pitcher' ? 72 : dim;
+      // Ultrasound Fan Shape with smooth rounded corners (matching reference image)
+      const w = size === 'pitcher' ? 74 : size === 'md' ? 42 : size === 'sm' ? 30 : 52;
+      const h = size === 'pitcher' ? 64 : size === 'md' ? 36 : size === 'sm' ? 26 : 46;
       return (
-        <svg width={w} height={h} viewBox="0 0 40 40" fill="none" className="drop-shadow-md">
-          {/* 60-degree sector wedge */}
+        <svg width={w} height={h} viewBox="0 0 48 42" fill="none" className="drop-shadow-md">
+          {/* Curved Fan Body with smooth rounded corners (concave top, convex bottom) */}
           <path
-            d="M20 34 L7 12 A18 18 0 0 1 33 12 Z"
+            d="M 14.5 10
+               Q 24 15.5 33.5 10
+               Q 37 9.5 38.5 12.5
+               L 44.5 28.5
+               Q 46 32 42.5 34.5
+               Q 24 43 5.5 34.5
+               Q 2 32 3.5 28.5
+               L 9.5 12.5
+               Q 11 9.5 14.5 10 Z"
             fill="#facc15"
-            stroke="#ca8a04"
-            strokeWidth="1.5"
+            stroke="#eab308"
+            strokeWidth="1.2"
             strokeLinejoin="round"
           />
-          {/* Inner Pineapple core arc */}
-          <path d="M12 17 A12 12 0 0 1 28 17" stroke="#eab308" strokeWidth="2.5" fill="none" strokeDasharray="2 2" />
-          {/* Radial juice grain lines */}
-          <line x1="20" y1="34" x2="20" y2="10" stroke="#ca8a04" strokeWidth="1" opacity="0.6" />
-          <line x1="20" y1="34" x2="14" y2="13" stroke="#ca8a04" strokeWidth="1" opacity="0.6" />
-          <line x1="20" y1="34" x2="26" y2="13" stroke="#ca8a04" strokeWidth="1" opacity="0.6" />
-          {/* Outer rind */}
-          <path d="M7 12 A18 18 0 0 1 33 12" stroke="#854d0e" strokeWidth="2.5" fill="none" />
+          {/* 3 Interior Soft Light Radial Stripes (from reference image) */}
+          {/* Center Stripe */}
+          <line
+            x1="24"
+            y1="18.5"
+            x2="24"
+            y2="37"
+            stroke="#fef08a"
+            strokeWidth="2.8"
+            strokeLinecap="round"
+            opacity="0.95"
+          />
+          {/* Left Radial Stripe */}
+          <line
+            x1="18.5"
+            y1="17"
+            x2="15.5"
+            y2="34"
+            stroke="#fef08a"
+            strokeWidth="2.8"
+            strokeLinecap="round"
+            opacity="0.95"
+          />
+          {/* Right Radial Stripe */}
+          <line
+            x1="29.5"
+            y1="17"
+            x2="32.5"
+            y2="34"
+            stroke="#fef08a"
+            strokeWidth="2.8"
+            strokeLinecap="round"
+            opacity="0.95"
+          />
         </svg>
       );
     }
