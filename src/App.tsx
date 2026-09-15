@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Flame
 } from 'lucide-react';
+import { ColoringGame } from './components/ColoringGame';
 
 // --- TYPES ---
 export type IngredientType = 'red' | 'yellow' | 'blue' | 'white' | 'black';
@@ -194,9 +195,32 @@ class SoundEffects {
       // Safe fallback
     }
   }
+
+  playSuccess() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C Major fanfare
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+        gain.gain.setValueAtTime(0.14, now + idx * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 0.8);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.08);
+        osc.stop(now + idx * 0.08 + 0.8);
+      });
+    } catch {
+      // Safe fallback
+    }
+  }
 }
 
-const sfx = new SoundEffects();
+export const sfx = new SoundEffects();
 
 // --- INGREDIENTS CONFIGURATION ---
 export const INGREDIENTS: IngredientMeta[] = [
@@ -647,7 +671,7 @@ export default function App() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [copied, setCopied] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [activeTab, setActiveTab] = useState<'studio' | 'presets'>('studio');
+  const [activeTab, setActiveTab] = useState<'studio' | 'presets' | 'game'>('studio');
 
   const blendTimerRef = useRef<number | null>(null);
 
@@ -867,6 +891,24 @@ export default function App() {
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Recipes</span>
               </button>
+              <button
+                onClick={() => setActiveTab('game')}
+                className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
+                  activeTab === 'game' 
+                    ? 'bg-amber-500 text-white shadow-xs font-bold' 
+                    : 'text-stone-700 hover:text-stone-900 font-medium'
+                }`}
+              >
+                <Palette className="w-3.5 h-3.5" />
+                <span>Color Challenge</span>
+                <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-full border ${
+                  activeTab === 'game'
+                    ? 'bg-amber-600 text-white border-amber-400'
+                    : 'bg-amber-100 text-amber-900 border-amber-300'
+                }`}>
+                  Game
+                </span>
+              </button>
             </div>
 
             {/* Audio Toggle */}
@@ -887,9 +929,17 @@ export default function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
-        {/* Preset Drawer when selected */}
-        {activeTab === 'presets' && (
+      <main className={`flex-1 w-full mx-auto flex flex-col min-h-0 ${
+        activeTab === 'game' 
+          ? 'max-w-[1440px] px-2 py-2 sm:px-4 sm:py-2.5 h-[calc(100vh-62px)] overflow-y-auto lg:overflow-hidden' 
+          : 'max-w-6xl p-4 sm:p-6 lg:p-8 gap-6'
+      }`}>
+        {activeTab === 'game' ? (
+          <ColoringGame />
+        ) : (
+          <>
+            {/* Preset Drawer when selected */}
+            {activeTab === 'presets' && (
           <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-xs animate-in fade-in slide-in-from-top-3 duration-200">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -1514,13 +1564,15 @@ export default function App() {
             </div>
           </div>
         </section>
+          </>
+        )}
       </main>
     </div>
   );
 }
 
 // --- SUB-COMPONENT: TACTILE SVG GRAPHICS FOR INGREDIENTS ---
-function IngredientGraphic({ type, size = 'md' }: { type: IngredientType; size?: 'sm' | 'md' | 'lg' | 'pitcher' }) {
+export function IngredientGraphic({ type, size = 'md' }: { type: IngredientType; size?: 'sm' | 'md' | 'lg' | 'pitcher' }) {
   const dim = size === 'sm' ? 28 : size === 'md' ? 36 : size === 'lg' ? 48 : 66;
 
   switch (type) {
