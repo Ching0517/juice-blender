@@ -303,7 +303,6 @@ export function ColoringGame() {
   const [placedItems, setPlacedItems] = useState<PlacedIngredient[]>([]);
   const [isBlending, setIsBlending] = useState(false);
   const [blendProgress, setBlendProgress] = useState(0);
-  const [hasBlended, setHasBlended] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const totalFruitCount = gameRecipe.red + gameRecipe.yellow + gameRecipe.blue + gameRecipe.white + gameRecipe.black;
@@ -347,27 +346,28 @@ export function ColoringGame() {
 
     setPlacedItems(prev => [...prev, newItem]);
     setGameRecipe(prev => ({ ...prev, [type]: prev[type] + 1 }));
-    setHasBlended(false);
   }, [totalFruitCount, maxCapacity, isBlending, isFinished, placedItems.length]);
 
-  // Clear pitcher
+  // Clear pitcher before blending (raw ingredients only)
   const clearPitcher = useCallback(() => {
     if (isBlending) return;
     sfx.playSplash();
     setGameRecipe({ red: 0, yellow: 0, blue: 0, white: 0, black: 0 });
     setPlacedItems([]);
-    setHasBlended(false);
   }, [isBlending]);
 
-  // Trigger Blend
-  const triggerBlend = useCallback((onComplete?: () => void) => {
-    if (isBlending || totalFruitCount === 0) return;
+  // Blend and IMMEDIATELY paint directly onto the canvas! (No undo, no rethink!)
+  const blendAndPaintDirectly = useCallback(() => {
+    if (!currentZone || isFinished || totalFruitCount === 0 || isBlending) return;
+
     setIsBlending(true);
     setBlendProgress(0);
     sfx.playBlenderWhir(0.9);
 
     const startTime = Date.now();
-    const duration = 900;
+    const duration = 850;
+    const currentMixResult = calculateSubtractiveMix(gameRecipe);
+    const currentMixRecipe = { ...gameRecipe };
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -377,33 +377,20 @@ export function ColoringGame() {
       if (progress >= 1) {
         clearInterval(interval);
         setIsBlending(false);
-        setHasBlended(true);
-        sfx.playChime();
-        if (onComplete) onComplete();
-      }
-    }, 20);
-  }, [isBlending, totalFruitCount]);
 
-  // Confirm and paint current active cell!
-  const paintCurrentCell = useCallback(() => {
-    if (!currentZone || isFinished || totalFruitCount === 0) return;
-
-    // If user didn't blend yet, auto-blend and then paint!
-    if (!hasBlended) {
-      triggerBlend(() => {
-        // Execute paint directly after blending completes
-        const accuracy = calculateColorMatch(blendedResult.rgb, currentZone.targetRgb);
+        // Instantly commit and paint directly onto the canvas!
+        const accuracy = calculateColorMatch(currentMixResult.rgb, currentZone.targetRgb);
         sfx.playSplash();
         setTimeout(() => sfx.playChime(), 150);
 
         setPlayerPaints(prev => ({
           ...prev,
           [currentZone.id]: {
-            hex: blendedResult.hex,
-            rgb: blendedResult.rgb,
+            hex: currentMixResult.hex,
+            rgb: currentMixResult.rgb,
             accuracy,
-            name: blendedResult.name,
-            recipe: { ...gameRecipe }
+            name: currentMixResult.name,
+            recipe: currentMixRecipe
           }
         }));
 
@@ -413,16 +400,16 @@ export function ColoringGame() {
         } else if (accuracy >= 75) {
           feedback = `✨ Zone #${currentZone.number} is very close! Accuracy: ${accuracy}%`;
         } else if (accuracy >= 55) {
-          feedback = `🎨 Zone #${currentZone.number} has creative flair! Accuracy: ${accuracy}%`;
+          feedback = `🎨 Zone #${currentZone.number} locked in! Accuracy: ${accuracy}%`;
         } else {
-          feedback = `🧪 Wild avant-garde color for Zone #${currentZone.number}! Accuracy: ${accuracy}%`;
+          feedback = `🧪 Wild bold shade for Zone #${currentZone.number}! Accuracy: ${accuracy}%`;
         }
         setToastMessage(feedback);
         setTimeout(() => setToastMessage(null), 3000);
 
+        // Reset pitcher immediately for next zone
         setGameRecipe({ red: 0, yellow: 0, blue: 0, white: 0, black: 0 });
         setPlacedItems([]);
-        setHasBlended(false);
 
         const nextIdx = currentZoneIdx + 1;
         setCurrentZoneIdx(nextIdx);
@@ -430,49 +417,9 @@ export function ColoringGame() {
         if (nextIdx >= template.zones.length) {
           setTimeout(() => sfx.playSuccess(), 400);
         }
-      });
-      return;
-    }
-
-    const accuracy = calculateColorMatch(blendedResult.rgb, currentZone.targetRgb);
-    sfx.playSplash();
-    setTimeout(() => sfx.playChime(), 150);
-
-    setPlayerPaints(prev => ({
-      ...prev,
-      [currentZone.id]: {
-        hex: blendedResult.hex,
-        rgb: blendedResult.rgb,
-        accuracy,
-        name: blendedResult.name,
-        recipe: { ...gameRecipe }
       }
-    }));
-
-    let feedback = '';
-    if (accuracy >= 90) {
-      feedback = `🎯 Zone #${currentZone.number} matched brilliantly! Accuracy: ${accuracy}%`;
-    } else if (accuracy >= 75) {
-      feedback = `✨ Zone #${currentZone.number} is very close! Accuracy: ${accuracy}%`;
-    } else if (accuracy >= 55) {
-      feedback = `🎨 Zone #${currentZone.number} has creative flair! Accuracy: ${accuracy}%`;
-    } else {
-      feedback = `🧪 Wild avant-garde color for Zone #${currentZone.number}! Accuracy: ${accuracy}%`;
-    }
-    setToastMessage(feedback);
-    setTimeout(() => setToastMessage(null), 3000);
-
-    setGameRecipe({ red: 0, yellow: 0, blue: 0, white: 0, black: 0 });
-    setPlacedItems([]);
-    setHasBlended(false);
-
-    const nextIdx = currentZoneIdx + 1;
-    setCurrentZoneIdx(nextIdx);
-
-    if (nextIdx >= template.zones.length) {
-      setTimeout(() => sfx.playSuccess(), 400);
-    }
-  }, [currentZone, isFinished, totalFruitCount, hasBlended, blendedResult, gameRecipe, currentZoneIdx, template.zones.length, triggerBlend]);
+    }, 20);
+  }, [currentZone, isFinished, totalFruitCount, isBlending, gameRecipe, currentZoneIdx, template.zones.length]);
 
   // Restart current game
   const resetGame = useCallback(() => {
@@ -481,7 +428,6 @@ export function ColoringGame() {
     setPlayerPaints({});
     setGameRecipe({ red: 0, yellow: 0, blue: 0, white: 0, black: 0 });
     setPlacedItems([]);
-    setHasBlended(false);
     setToastMessage(null);
   }, []);
 
@@ -493,7 +439,6 @@ export function ColoringGame() {
     setPlayerPaints({});
     setGameRecipe({ red: 0, yellow: 0, blue: 0, white: 0, black: 0 });
     setPlacedItems([]);
-    setHasBlended(false);
     setToastMessage(null);
   };
 
@@ -891,44 +836,40 @@ export function ColoringGame() {
               <div
                 className="absolute bottom-0 left-0 right-0 transition-all duration-300 z-10"
                 style={{
-                  height: hasBlended 
-                    ? `${Math.min(90, Math.max(16, totalFruitCount * 9))}%` 
-                    : isBlending 
-                      ? `${Math.min(90, blendProgress * Math.max(16, totalFruitCount * 9))}%` 
-                      : '0%',
+                  height: isBlending 
+                    ? `${Math.min(90, blendProgress * Math.max(20, totalFruitCount * 9))}%` 
+                    : '0%',
                   backgroundColor: blendedResult.hex,
-                  opacity: hasBlended ? 0.96 : isBlending ? blendProgress * 0.9 : 0
+                  opacity: isBlending ? blendProgress * 0.95 : 0
                 }}
               >
                 <div className="w-full h-1.5 bg-white/40 border-b border-white/20" />
               </div>
 
-              {/* Physical Unblended Fruits in Pitcher */}
-              {!hasBlended && (
-                <div className="absolute inset-0 pointer-events-none z-15 overflow-hidden">
-                  {placedItems.map(item => (
-                    <div
-                      key={item.id}
-                      className="absolute transition-all duration-300 ease-out"
-                      style={{
-                        left: `${item.x}%`,
-                        top: isBlending ? '75%' : `${item.y}%`,
-                        transform: `translate(-50%, -50%) rotate(${
-                          isBlending ? item.rotation + blendProgress * 720 : item.rotation
-                        }deg) scale(${isBlending ? Math.max(0, (1 - blendProgress) * item.scale * 0.8) : item.scale * 0.8})`,
-                        opacity: isBlending ? Math.max(0, 1 - blendProgress * 1.3) : 1
-                      }}
-                    >
-                      <IngredientGraphic type={item.type} size="sm" />
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Physical Fruits in Pitcher */}
+              <div className="absolute inset-0 pointer-events-none z-15 overflow-hidden">
+                {placedItems.map(item => (
+                  <div
+                    key={item.id}
+                    className="absolute transition-all duration-300 ease-out"
+                    style={{
+                      left: `${item.x}%`,
+                      top: isBlending ? '75%' : `${item.y}%`,
+                      transform: `translate(-50%, -50%) rotate(${
+                        isBlending ? item.rotation + blendProgress * 720 : item.rotation
+                      }deg) scale(${isBlending ? Math.max(0, (1 - blendProgress) * item.scale * 0.8) : item.scale * 0.8})`,
+                      opacity: isBlending ? Math.max(0, 1 - blendProgress * 1.3) : 1
+                    }}
+                  >
+                    <IngredientGraphic type={item.type} size="sm" />
+                  </div>
+                ))}
+              </div>
 
               {totalFruitCount === 0 && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-stone-400 text-[11px] p-2">
                   <span>Pitcher is empty</span>
-                  <span className="text-[9px] text-stone-400 mt-0.5">Tap fruits below</span>
+                  <span className="text-[9px] text-stone-400 mt-0.5">Tap fruits below to load</span>
                 </div>
               )}
 
@@ -936,17 +877,23 @@ export function ColoringGame() {
               <div className="absolute bottom-1 w-8 h-1.5 bg-stone-400 rounded-full z-20" />
             </div>
 
-            {/* Juice color readout */}
+            {/* Status readout under pitcher */}
             <div className="w-full flex items-center justify-between mt-1 px-1 text-[11px]">
-              {hasBlended ? (
-                <span className="font-bold flex items-center gap-1.5 truncate" style={{ color: blendedResult.hex }}>
-                  <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ backgroundColor: blendedResult.hex }} />
-                  <span className="truncate">{blendedResult.name}</span>
+              {isBlending ? (
+                <span className="font-bold text-amber-600 flex items-center gap-1 animate-pulse">
+                  <Sparkles className="w-3 h-3 text-amber-500 animate-spin" />
+                  Blending & Painting...
+                </span>
+              ) : totalFruitCount > 0 ? (
+                <span className="font-bold text-stone-700">
+                  {totalFruitCount} fruit{totalFruitCount > 1 ? 's' : ''} loaded
                 </span>
               ) : (
-                <span className="text-stone-400 font-medium text-[10px]">Unblended</span>
+                <span className="text-stone-400 font-medium text-[10px]">Add fruits then blend</span>
               )}
-              <span className="text-[10px] font-mono text-stone-400">{hasBlended ? blendedResult.hex : ''}</span>
+              <span className="text-[10px] font-semibold text-stone-400">
+                {isFinished ? 'Done' : `Target #${currentZone?.number}`}
+              </span>
             </div>
           </div>
 
@@ -976,49 +923,36 @@ export function ColoringGame() {
             </div>
           </div>
 
-          {/* ACTION BUTTONS: Blend, Paint, Clear */}
+          {/* ACTION BUTTONS: Single direct Blend & Paint action */}
           <div className="flex flex-col gap-1.5 pt-1.5 border-t border-stone-100 shrink-0">
             <div className="flex items-center gap-1.5">
               <button
-                onClick={() => triggerBlend()}
-                disabled={totalFruitCount === 0 || isBlending || isFinished}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-bold text-xs rounded-xl shadow-xs active:scale-98 transition-all disabled:opacity-40 disabled:pointer-events-none"
-              >
-                <Play className={`w-3.5 h-3.5 fill-white ${isBlending ? 'animate-spin' : ''}`} />
-                <span>{isBlending ? 'Blending...' : 'Blend Juice'}</span>
-              </button>
-
-              <button
                 onClick={clearPitcher}
                 disabled={totalFruitCount === 0 || isBlending}
-                className="p-2 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl border border-stone-200 transition-colors disabled:opacity-40"
-                title="Clear pitcher"
+                className="p-2.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl border border-stone-200 transition-colors disabled:opacity-40 shrink-0"
+                title="Clear raw ingredients"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
+
+              {/* Single Irreversible Action: Blend & Commit Directly */}
+              <button
+                onClick={blendAndPaintDirectly}
+                disabled={isFinished || totalFruitCount === 0 || isBlending}
+                className="flex-1 py-2.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white shadow-xs active:scale-98 transition-all disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <Palette className={`w-3.5 h-3.5 fill-white ${isBlending ? 'animate-spin' : ''}`} />
+                <span className="truncate">
+                  {isBlending 
+                    ? `Blending & Painting Zone #${currentZone?.number}...` 
+                    : `Blend & Paint Zone #${currentZone?.number}`}
+                </span>
+                {!isBlending && <ChevronRight className="w-3.5 h-3.5" />}
+              </button>
             </div>
 
-            {/* Big Paint Confirmation Button */}
-            <button
-              onClick={paintCurrentCell}
-              disabled={isFinished || totalFruitCount === 0}
-              className={`w-full py-2.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-98 ${
-                !hasBlended 
-                  ? 'bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300'
-                  : 'bg-stone-900 hover:bg-stone-800 text-white'
-              } disabled:opacity-40 disabled:pointer-events-none`}
-            >
-              <Palette className="w-3.5 h-3.5" />
-              <span className="truncate">
-                {!hasBlended 
-                  ? `Blend & Paint Zone #${currentZone?.number}` 
-                  : `Paint Zone #${currentZone?.number} (1 Chance!)`}
-              </span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-
-            <p className="text-[10px] text-stone-400 text-center leading-none">
-              ⚠️ Permanent paint • Only 1 chance per zone
+            <p className="text-[10px] text-amber-800 font-medium text-center leading-none">
+              🔒 Locks immediately into canvas — cannot be undone!
             </p>
           </div>
         </div>

@@ -16,9 +16,11 @@ import {
   Palette,
   ExternalLink,
   ChevronRight,
-  Flame
+  Flame,
+  Target
 } from 'lucide-react';
 import { ColoringGame } from './components/ColoringGame';
+import { SingleChallenge } from './components/SingleChallenge';
 
 // --- TYPES ---
 export type IngredientType = 'red' | 'yellow' | 'blue' | 'white' | 'black';
@@ -671,7 +673,7 @@ export default function App() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [copied, setCopied] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [activeTab, setActiveTab] = useState<'studio' | 'presets' | 'game'>('studio');
+  const [activeTab, setActiveTab] = useState<'studio' | 'presets' | 'single' | 'game'>('studio');
 
   const blendTimerRef = useRef<number | null>(null);
 
@@ -892,6 +894,24 @@ export default function App() {
                 <span>Recipes</span>
               </button>
               <button
+                onClick={() => setActiveTab('single')}
+                className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
+                  activeTab === 'single' 
+                    ? 'bg-rose-500 text-white shadow-xs font-bold' 
+                    : 'text-stone-700 hover:text-stone-900 font-medium'
+                }`}
+              >
+                <Target className="w-3.5 h-3.5" />
+                <span>Single Match</span>
+                <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-full border ${
+                  activeTab === 'single'
+                    ? 'bg-rose-600 text-white border-rose-400'
+                    : 'bg-rose-100 text-rose-900 border-rose-300'
+                }`}>
+                  Quick
+                </span>
+              </button>
+              <button
                 onClick={() => setActiveTab('game')}
                 className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
                   activeTab === 'game' 
@@ -900,13 +920,13 @@ export default function App() {
                 }`}
               >
                 <Palette className="w-3.5 h-3.5" />
-                <span>Color Challenge</span>
+                <span>Coloring Game</span>
                 <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-full border ${
                   activeTab === 'game'
                     ? 'bg-amber-600 text-white border-amber-400'
                     : 'bg-amber-100 text-amber-900 border-amber-300'
                 }`}>
-                  Game
+                  Canvas
                 </span>
               </button>
             </div>
@@ -930,12 +950,14 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className={`flex-1 w-full mx-auto flex flex-col min-h-0 ${
-        activeTab === 'game' 
+        activeTab === 'game' || activeTab === 'single'
           ? 'max-w-[1440px] px-2 py-2 sm:px-4 sm:py-2.5 h-[calc(100vh-62px)] overflow-y-auto lg:overflow-hidden' 
           : 'max-w-6xl p-4 sm:p-6 lg:p-8 gap-6'
       }`}>
         {activeTab === 'game' ? (
           <ColoringGame />
+        ) : activeTab === 'single' ? (
+          <SingleChallenge />
         ) : (
           <>
             {/* Preset Drawer when selected */}
